@@ -1,24 +1,39 @@
-[app]
-title = Kalori Takip
-package.name = kaloritakip
-package.domain = org.kaloritakip
+name: Build APK
 
-source.dir = .
-source.include_exts = py,png,jpg,kv,atlas,json
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
 
-version = 1.0
-requirements = python3,kivy
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
-orientation = portrait
-fullscreen = 0
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
 
-android.permissions = WRITE_EXTERNAL_STORAGE,READ_EXTERNAL_STORAGE
-android.api = 33
-android.minapi = 21
-android.ndk = 25b
-android.archs = arm64-v8a,armeabi-v7a
-android.allow_backup = True
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git zip unzip openjdk-17-jdk python3-pip \
+            autoconf libtool pkg-config zlib1g-dev libncurses5-dev \
+            libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev
 
-[buildozer]
-log_level = 2
-warn_on_root = 1
+      - name: Install buildozer
+        run: |
+          pip install --upgrade pip
+          pip install buildozer cython==0.29.36
+
+      - name: Build APK with Buildozer
+        run: |
+          yes | buildozer android debug
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kalori-takip-apk
+          path: bin/*.apk
